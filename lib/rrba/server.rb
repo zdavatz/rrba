@@ -1,35 +1,46 @@
 #!/usr/bin/env ruby
-# AuthServer -- xmlconv2 -- 10.11.2004 -- hwyss@ywesee.com
+# Server -- rrba -- 10.11.2004 -- hwyss@ywesee.com
 
 require 'rrba/user'
-require 'odba'
+require 'rrba/error'
+require 'openssl'
+require 'digest/md5'
 
 module RRBA
 	class Server
-		include ODBA::Persistable
-		def initialize(serv)
-			@serv = serv
-			@users = {}
+		attr_writer :root
+		def initialize
+			@users = []
 		end
-		def add_user
-			id = @serv.id_server.next_id(:user)
-			user = RRBA::User.new(id)
-			@users.store(id, user)
-			@users.odba_store
-			user
+		def add_user(user)
+			id = user.unique_id
+			if(@users.any? { |usr| usr.unique_id == id })
+				raise "Duplicate ID #{id}"
+			end
+			@users.push(user).last
 		end
 		def authenticate(&block)
 			challenge = Digest::MD5.hexdigest(rand(2**32).to_s)[0,20]
 			signature = block.call(challenge)
-			@users.each_value { |user|
-				if(user.authenticate(signature))
-					return user
+			if(@root && @root.authenticate(challenge, signature))
+				return @root.new_session
+			end
+			@users.each { |user|
+				if(user.authenticate(challenge, signature))
+					return user.new_session
 				end
 			}
-			nil
+			raise AuthenticationError, 'Authentication failed'
 		end
 		def user(id)
-			@users[id]
+			@users.select { |user|  
+				user.unique_id == id 
+			}.first or raise 'Unknown User'
+		end
+		def unique_ids
+			@users.collect { |user|
+				user.unique_id
+			}
 		end
 	end
 end
