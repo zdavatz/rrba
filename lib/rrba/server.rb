@@ -35,7 +35,7 @@ module RRBA
 		def user(id)
 			@users.select { |user|  
 				user.unique_id == id 
-			}.first or raise 'Unknown User'
+			}.first or raise "Unknown User: #{id}"
 		end
 		def unique_ids
 			@users.collect { |user|
