@@ -11,9 +11,7 @@ module RRBA
 		def initialize(unique_id)
 			@unique_id = unique_id
 		end
-		def authenticate(&block)
-			challenge = Digest::MD5.hexdigest(rand(2**32).to_s)[0,20]
-			signature = block.call(challenge)
+		def authenticate(challenge, signature)
 			@public_key.sysverify(challenge, signature)
 		end
 	end
