@@ -8,7 +8,7 @@ require 'digest/md5'
 
 module RRBA
 	class Server
-		attr_writer :root
+		attr_writer :root, :anonymous
 		def initialize
 			@users = []
 		end
@@ -22,6 +22,9 @@ module RRBA
 		def authenticate(&block)
 			challenge = Digest::MD5.hexdigest(rand(2**32).to_s)[0,20]
 			signature = block.call(challenge)
+			if(@anonymous && signature == :anonymous)
+				return @anonymous.new_session
+			end
 			if(@root && @root.authenticate(challenge, signature))
 				return @root.new_session
 			end

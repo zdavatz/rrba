@@ -119,6 +119,26 @@ module RRBA
 			assert_equal(session, sess)
 			root.__verify
 		end
+		def test_authenticate__anonymous
+			root = Mock.new('Root')
+			user2 = Mock.new('User2')
+			user3 = Mock.new('User3')
+			anonymous = Mock.new('Anonymous')
+			users = [
+				user2,
+				user3,
+			]
+			session = Mock.new('Session')
+			anonymous.__next(:new_session) { session }
+			@server.root = root
+			@server.anonymous = anonymous
+			@server.instance_variable_set('@users', users)
+			sess = @server.authenticate { |challenge, sig|
+				:anonymous
+			}
+			assert_equal(session, sess)
+			root.__verify
+		end
 		def test_unique_ids
 			user = Mock.new('user')
 			user2 = Mock.new('user2')
