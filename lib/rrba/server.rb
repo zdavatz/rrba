@@ -19,7 +19,7 @@ module RRBA
 			end
 			@users.push(user).last
 		end
-		def authenticate(&block)
+		def authenticate(id=nil, &block)
 			challenge = Digest::MD5.hexdigest(rand(2**32).to_s)[0,20]
 			signature = block.call(challenge)
 			if(@anonymous && signature == :anonymous)
@@ -28,11 +28,21 @@ module RRBA
 			if(@root && @root.authenticate(challenge, signature))
 				return @root.new_session
 			end
-			@users.each { |user|
-				if(user.authenticate(challenge, signature))
-					return user.new_session
+			begin
+				if(id)
+					if((user = user(id)) \
+						&& user.authenticate(challenge, signature))
+						return user.new_session
+					end
+				else
+					@users.each { |user|
+						if(user.authenticate(challenge, signature))
+							return user.new_session
+						end
+					}
 				end
-			}
+			rescue RuntimeError
+			end
 			raise AuthenticationError, 'Authentication failed'
 		end
 		def user(id)

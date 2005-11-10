@@ -139,6 +139,32 @@ module RRBA
 			assert_equal(session, sess)
 			root.__verify
 		end
+		def test_authenticate__by_id
+			user1 = Mock.new('User1')
+			user2 = Mock.new('User2')
+			user3 = Mock.new('User3')
+			user1.__next(:unique_id) { 'user1' }
+			user2.__next(:unique_id) { 'user2' }
+			user3.__next(:unique_id) { 'user3' }
+			user2.__next(:authenticate) { |challenge, sig|
+				assert_equal('client-signature', sig)
+				true
+			}
+			users = [
+				user1,
+				user2,
+				user3,
+			]
+			session = Mock.new('Session')
+			user2.__next(:new_session) { session }
+			@server.instance_variable_set('@users', users)
+			sess = @server.authenticate('user2') { |challenge, sig|
+				assert_equal(20, challenge.size)
+				'client-signature'
+			}
+			assert_equal(session, sess)
+			user2.__verify
+		end
 		def test_unique_ids
 			user = Mock.new('user')
 			user2 = Mock.new('user2')
